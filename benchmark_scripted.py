@@ -43,7 +43,7 @@ def main():
     for _ in tqdm(range(args.n_batch)):
         model(t)
     end = time.time()
-    print('latency [sec]: %.4f' % (end - start))
+    print('time_total [sec]: %.4f' % (end - start))
     print('latency [ms/batch]: %.4f' % ((end - start) / args.n_batch * 1000))
 
 if __name__ == '__main__':
