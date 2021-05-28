@@ -10,7 +10,7 @@ from utils import configure_cudnn
 def parse_arg():
     parser = argparse.ArgumentParser()
     parser.add_argument('model_path', help='path to model named `scriped_*.pth`')
-    parser.add_argument('--n_batch', type=int, default=1000)
+    parser.add_argument('--n_batch', type=int, default=100)
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--shape', type=int, nargs=2, default=[224, 224])
     parser.add_argument('--device', default=None)
@@ -44,7 +44,7 @@ def main():
         model(t)
     end = time.time()
     print('latency [sec]: %.4f' % (end - start))
-    print('latency [ms/batch]: %.4f' % (end - start / args.n_batch * 1000))
+    print('latency [ms/batch]: %.4f' % ((end - start) / args.n_batch * 1000))
 
 if __name__ == '__main__':
     main()
