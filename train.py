@@ -34,6 +34,7 @@ def parse_arg():
     parser.add_argument('--quantization_backend',
                         choices=['qnnpack', 'fbgemm'],
                         default='fbgemm')
+    parser.add_argument('--pretrained', default='imagenet')
     parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--lr_drop_epochs',
                         type=int,
@@ -85,7 +86,7 @@ def main():
 
     print('Preparing model...')
     model = get_model(args.model,
-                      pretrained=None,
+                      pretrained=args.pretrained,
                       replace_relu=args.replace_relu,
                       fuse_model=args.fuse_model)
     if enable_qat:

@@ -4,8 +4,14 @@ from typing import Any, Callable, List, Optional
 
 import torch
 from torch import Tensor, nn
+from torchvision.models.utils import load_state_dict_from_url
 
 __all__ = ['MobileNetV2', 'mobilenet_v2']
+
+model_urls = {
+    'mobilenet_v2':
+    'https://download.pytorch.org/models/mobilenet_v2-b0353104.pth',
+}
 
 
 def _make_divisible(v: float,
@@ -236,7 +242,11 @@ def mobilenet_v2(pretrained=None,
     model = MobileNetV2(**kwargs)
 
     if pretrained is not None:
-        state_dict = torch.load(pretrained)
+        if pretrained == 'imagenet':
+            state_dict = load_state_dict_from_url(model_urls['mobilenet_v2'],
+                                                  progress=True)
+        else:
+            state_dict = torch.load(pretrained)
         model.load_state_dict(state_dict)
 
     if replace_relu:
