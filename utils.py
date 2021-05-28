@@ -111,7 +111,7 @@ def get_model(model_name,
         model = mobilenet_v2(pretrained=pretrained,
                              replace_relu=replace_relu,
                              fuse_model=fuse_model)
-    # TODO: support efficientnet-lite0
+    # TODO: other models
     else:
         raise ValueError(f'model {model_name} is not supported.')
 
