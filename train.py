@@ -79,7 +79,7 @@ def main():
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     if args.device is not None:
         device = torch.device(args.device)
-    print(f'Device: {device}')
+    print(f'device: {device}')
 
     print('Preparing dataset...')
     train_dataloader, test_dataloader = prepare_dataloaders(args.batch_size)

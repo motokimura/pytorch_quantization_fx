@@ -22,7 +22,7 @@ def main():
     device = torch.device('cpu')  # cpu mode is required to run quantized model
     if args.device is not None:
         device = torch.device(args.device)
-    print(f'Device: {device}')
+    print(f'device: {device}')
 
     print('Preparing dataset...')
     _, test_dataloader = prepare_dataloaders(args.batch_size)

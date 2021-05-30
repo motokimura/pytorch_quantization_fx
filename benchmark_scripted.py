@@ -25,13 +25,14 @@ def main():
     device = torch.device('cpu')  # cpu mode is required to run quantized model
     if args.device is not None:
         device = torch.device(args.device)
-    print(f'Device: {device}')
+    print(f'device: {device}')
+
+    batch_shape = [args.batch_size, 3, *args.shape]
+    print(f'batch_shape: {batch_shape}')
 
     print('Preparing model...')
     model = torch.jit.load(args.model_path)
     model.to(device)
-
-    batch_shape = [args.batch_size, 3, *args.shape]
 
     print('Warming up...')
     t = torch.zeros(batch_shape, device=device)
@@ -45,6 +46,7 @@ def main():
     end = time.time()
     print('time_total [sec]: %.4f' % (end - start))
     print('latency [ms/batch]: %.4f' % ((end - start) / args.n_batch * 1000))
+    print(f'device: {device}, batch_shape: {batch_shape}, n_batch: {args.n_batch}')
 
 if __name__ == '__main__':
     main()
