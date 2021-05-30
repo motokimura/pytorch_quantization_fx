@@ -73,7 +73,7 @@ $ EXP_ID=1
 $ python train.py $EXP_ID --mode qat --replace_relu --fuse_model --lr 0.0005 --batch_size 128
 ```
 
-*Note that the learning rate is lower than the one used to train float model.*
+**Note that the learning rate is lower than the one used to train float model.**
 
 Trained weight is saved into `models/exp_0001/best_model.pth`.
 
