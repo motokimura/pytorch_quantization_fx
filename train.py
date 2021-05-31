@@ -85,6 +85,8 @@ def main():
     train_dataloader, test_dataloader = prepare_dataloaders(args.batch_size)
 
     print('Preparing model...')
+    if args.pretrained == '':
+        args.pretrained = None
     model = get_model(args.model,
                       pretrained=args.pretrained,
                       replace_relu=args.replace_relu,
