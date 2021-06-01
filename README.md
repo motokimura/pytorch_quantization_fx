@@ -18,7 +18,7 @@ May work with other versions, but note that torch>=1.3.0 is required to use PyTo
 ## Setup
 
 ```
-$ pip install -r requirements.txt  -f https://download.pytorch.org/whl/torch_stable.html
+$ pip install -r requirements.txt
 ```
 
 Before training, get your API key from [W&B](https://wandb.ai) and then:
@@ -29,10 +29,20 @@ $ echo 'WANDB_API_KEY = "xxxx"' > .env  # replace xxxx with your own W&B API key
 
 `train.py` will load the API key from `.env` to send training logs to W&B.
 
+## Pretrained weights
+
+Pretrained weights are available:
+
+```
+unzip models_v1.zip
+```
+
+- `models/exp_0000/model_best.pth`: float model
+- `models/exp_0001/model_best.pth`: model trained with qnantization-aware training
 
 ## Post training static quantization
 
-You need to train float model first:
+You need to train float model first (can be skipped if you use pretrained weight):
 
 ```
 $ EXP_ID=0
@@ -66,7 +76,7 @@ $ ls -lh models/exp_0000/scripted_*
 
 ## Quantization aware training
 
-For quantization aware training:
+For quantization aware training (can be skipped if you use pretrained weight):
 
 ```
 $ EXP_ID=1
