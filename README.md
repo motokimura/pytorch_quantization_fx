@@ -12,13 +12,13 @@ Currently, post training static quantization and quantization aware training are
 
 See [requirements.txt](requirements.txt) for additional requirements.
 
-May work with other versions, but note that you need torch>=1.3.0 to use PyTorch quantization library.
+May work with other versions, but note that torch>=1.3.0 is required to use PyTorch quantization library.
 
 
 ## Setup
 
 ```
-$ pip install -r requirements.txt  -f https://download.pytorch.org/whl/torch_stable.html
+$ pip install -r requirements.txt
 ```
 
 Before training, get your API key from [W&B](https://wandb.ai) and then:
@@ -29,14 +29,24 @@ $ echo 'WANDB_API_KEY = "xxxx"' > .env  # replace xxxx with your own W&B API key
 
 `train.py` will load the API key from `.env` to send training logs to W&B.
 
+## Pretrained weights
+
+Pretrained weights are available:
+
+```
+unzip models_v1.zip
+```
+
+- `models/exp_0000/model_best.pth`: float model
+- `models/exp_0001/model_best.pth`: model trained with qnantization-aware training
 
 ## Post training static quantization
 
-You need to train float model first:
+You need to train float model first (can be skipped if you use pretrained weight):
 
 ```
 $ EXP_ID=0
-$ python train.py $EXP_ID --mode normal
+$ python train.py $EXP_ID --mode normal --lr 0.005 --batch_size 128
 ```
 
 Trained weight is saved into `models/exp_0000/best_model.pth`.
@@ -66,12 +76,14 @@ $ ls -lh models/exp_0000/scripted_*
 
 ## Quantization aware training
 
-For quantization aware training:
+For quantization aware training (can be skipped if you use pretrained weight):
 
 ```
 $ EXP_ID=1
-$ python train.py $EXP_ID --mode qat --replace_relu --fuse_model
+$ python train.py $EXP_ID --mode qat --replace_relu --fuse_model --lr 0.0005 --batch_size 128
 ```
+
+**Note that the learning rate is lower than the one used to train float model.**
 
 Trained weight is saved into `models/exp_0001/best_model.pth`.
 
@@ -93,6 +105,7 @@ $ ls -lh models/exp_0001/scripted_*
 
 ## TODOs
 
+- [ ] Add a table to show model accuracy and performance
 - [ ] Add more options for QAT (observer, etc.)
 - [ ] Add models
 - [ ] Use Docker

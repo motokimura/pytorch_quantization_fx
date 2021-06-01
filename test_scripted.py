@@ -3,12 +3,12 @@ import argparse
 import torch
 from tqdm import tqdm
 
-from utils import prepare_dataloaders, test
+from utils import configure_cudnn, prepare_dataloaders, test
 
 
 def parse_arg():
     parser = argparse.ArgumentParser()
-    parser.add_argument('model_path')
+    parser.add_argument('model_path', help='path to model named `scriped_*.pth`')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--device', default=None)
     return parser.parse_args()
@@ -17,10 +17,12 @@ def parse_arg():
 def main():
     args = parse_arg()
 
+    configure_cudnn(deterministic=True, benchmark=False)
+
     device = torch.device('cpu')  # cpu mode is required to run quantized model
     if args.device is not None:
         device = torch.device(args.device)
-    print(f'Device: {device}')
+    print(f'device: {device}')
 
     print('Preparing dataset...')
     _, test_dataloader = prepare_dataloaders(args.batch_size)

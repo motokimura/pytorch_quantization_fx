@@ -35,13 +35,13 @@ def parse_arg():
                         choices=['qnnpack', 'fbgemm'],
                         default='fbgemm')
     parser.add_argument('--pretrained', default='imagenet')
-    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--epochs', type=int, default=300)
     parser.add_argument('--lr_drop_epochs',
                         type=int,
                         nargs='+',
-                        default=[70, 90])
-    parser.add_argument('--lr', type=float, default=0.0001)
-    parser.add_argument('--batch_size', type=int, default=32)
+                        default=[210, 270])
+    parser.add_argument('--lr', type=float, default=0.005)  # lower lr (e.g., 5e-4) is sutable for qat
+    parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--device', default=None)
     parser.add_argument('--seed', type=int, default=1000)
@@ -79,12 +79,14 @@ def main():
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     if args.device is not None:
         device = torch.device(args.device)
-    print(f'Device: {device}')
+    print(f'device: {device}')
 
     print('Preparing dataset...')
     train_dataloader, test_dataloader = prepare_dataloaders(args.batch_size)
 
     print('Preparing model...')
+    if args.pretrained == '':
+        args.pretrained = None
     model = get_model(args.model,
                       pretrained=args.pretrained,
                       replace_relu=args.replace_relu,

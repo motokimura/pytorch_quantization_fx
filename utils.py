@@ -60,9 +60,8 @@ def load_checkpoint(checkpoint_path, model, optimizer, scheduler, epoch,
 def configure_wandb(project=None, group=None, config=None):
     from os import environ
 
-    from dotenv import load_dotenv
-
     import wandb
+    from dotenv import load_dotenv
 
     load_dotenv()  # load WANDB_API_KEY from .env file
     assert "WANDB_API_KEY" in environ, '"WANDB_API_KEY" is empty. Create ".env" file with your W&B API key. See ".env.sample" for the file format'
@@ -73,6 +72,7 @@ def configure_wandb(project=None, group=None, config=None):
 def prepare_dataloaders(batch_size):
     # prepara train dataloader
     train_transform = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(p=0.5),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
@@ -111,7 +111,7 @@ def get_model(model_name,
         model = mobilenet_v2(pretrained=pretrained,
                              replace_relu=replace_relu,
                              fuse_model=fuse_model)
-    # TODO: support efficientnet-lite0
+    # TODO: other models
     else:
         raise ValueError(f'model {model_name} is not supported.')
 
