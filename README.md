@@ -52,7 +52,7 @@ unzip models_v2.zip
 You need to train float model first (can be skipped if you use pretrained weight):
 
 ```
-$ EXP_ID=0
+$ EXP_ID=2000
 $ python train.py $EXP_ID --mode normal --lr 0.005 --batch_size 64
 ```
 
@@ -85,7 +85,7 @@ $ ls -lh models/exp_2000/scripted_*
 For quantization aware training (can be skipped if you use pretrained weight):
 
 ```
-$ EXP_ID=1
+$ EXP_ID=2001
 $ python train.py $EXP_ID --mode qat --replace_relu --fuse_model --lr 0.005 --batch_size 64
 ```
 
