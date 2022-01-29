@@ -45,7 +45,7 @@ unzip models_v2.zip
 ```
 
 - `models/exp_2000/model_best.pth`: float model
-- `models/exp_2001/model_best.pth`: model trained with qnantization-aware training
+- `models/exp_2001/model_best.pth`: model trained with qnantization aware training
 
 ## Post training static quantization
 
