@@ -59,9 +59,10 @@ def main():
     if args.mode == 'ptq':
         model = get_model(
             args.model,
-            pretrained=model_path,  # XXX: load weight here in ptq mode
+            pretrained=model_path,  # load weight here in ptq mode
             replace_relu=args.replace_relu,
-            fuse_model=args.fuse_model)
+            fuse_model=args.fuse_model,
+            eval_before_fuse=True)
         # XXX: arg `pretrained` assumes the model pretrained w/ mode='normal' & fuse_model=False
         model.qconfig = torch.quantization.get_default_qconfig(
             args.quantization_backend)
@@ -74,7 +75,8 @@ def main():
         model = get_model(args.model,
                           pretrained=None,
                           replace_relu=args.replace_relu,
-                          fuse_model=args.fuse_model)
+                          fuse_model=args.fuse_model,
+                          eval_before_fuse=False)
         if args.mode == 'normal':
             model.load_state_dict(state_dict)
         elif args.mode == 'qat':
@@ -85,6 +87,7 @@ def main():
             torch.quantization.convert(model.eval(), inplace=True)
         else:
             raise ValueError(f'{args.mode} is not supported.')
+
     model.to(device)
 
     print('Warming up...')

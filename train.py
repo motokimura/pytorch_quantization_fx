@@ -40,8 +40,8 @@ def parse_arg():
                         type=int,
                         nargs='+',
                         default=[210, 270])
-    parser.add_argument('--lr', type=float, default=0.005)  # lower lr (e.g., 5e-4) is sutable for qat
-    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--lr', type=float, default=0.005)
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--device', default=None)
     parser.add_argument('--seed', type=int, default=1000)
@@ -90,7 +90,8 @@ def main():
     model = get_model(args.model,
                       pretrained=args.pretrained,
                       replace_relu=args.replace_relu,
-                      fuse_model=args.fuse_model)
+                      fuse_model=args.fuse_model,
+                      eval_before_fuse=False)
     if enable_qat:
         model.qconfig = torch.quantization.get_default_qat_qconfig(
             args.quantization_backend)
@@ -169,10 +170,10 @@ def main():
 
         wandb.log(logs)
 
-    wandb.finish()
-
     print('Reached best accuract %.4f at epoch %d' %
           (best_accuracy, best_accuracy_epoch))
+
+    wandb.finish()
 
 
 if __name__ == '__main__':

@@ -267,6 +267,7 @@ class MobileNetV2(nn.Module):
 def mobilenet_v2(pretrained=None,
                  replace_relu=False,
                  fuse_model=False,
+                 eval_before_fuse=True,
                  **kwargs: Any) -> MobileNetV2:
     """
     Constructs a MobileNetV2 architecture from
@@ -275,6 +276,7 @@ def mobilenet_v2(pretrained=None,
         pretrained (str): path to pretrained weight file.
         replace_relu (bool):
         fuse_model (bool):
+        eval_before_fuse (bool):
     """
     model = MobileNetV2(**kwargs)
 
@@ -297,9 +299,15 @@ def mobilenet_v2(pretrained=None,
         # this can both make the model faster by saving on memory access while also improving numerical accuracy
         # while this can be used with any model, this is especially common with quantized models
         assert replace_relu, '`replace_relu` must be True if you want to fuse modules.'
-        # XXX: for some reason we don't know, convert for post-training quantization fails w/o this eval...
-        model.eval()
+
+        if eval_before_fuse:
+            model.eval()
+        else:
+            model.train()
+
         # fuse Conv+BN and Conv+BN+ReLU modules
         model.fuse_model()
+
+    model.eval()
 
     return model

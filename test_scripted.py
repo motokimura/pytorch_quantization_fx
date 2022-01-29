@@ -8,7 +8,8 @@ from utils import configure_cudnn, prepare_dataloaders, test
 
 def parse_arg():
     parser = argparse.ArgumentParser()
-    parser.add_argument('model_path', help='path to model named `scriped_*.pth`')
+    parser.add_argument('model_path',
+                        help='path to model named `scriped_*.pth`')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--device', default=None)
     return parser.parse_args()

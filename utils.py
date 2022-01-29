@@ -60,8 +60,9 @@ def load_checkpoint(checkpoint_path, model, optimizer, scheduler, epoch,
 def configure_wandb(project=None, group=None, config=None):
     from os import environ
 
-    import wandb
     from dotenv import load_dotenv
+
+    import wandb
 
     load_dotenv()  # load WANDB_API_KEY from .env file
     assert "WANDB_API_KEY" in environ, '"WANDB_API_KEY" is empty. Create ".env" file with your W&B API key. See ".env.sample" for the file format'
@@ -106,11 +107,13 @@ def prepare_dataloaders(batch_size):
 def get_model(model_name,
               pretrained='imagenet',
               replace_relu=False,
-              fuse_model=False):
+              fuse_model=False,
+              eval_before_fuse=True):
     if model_name == 'mobilenetv2':
         model = mobilenet_v2(pretrained=pretrained,
                              replace_relu=replace_relu,
-                             fuse_model=fuse_model)
+                             fuse_model=fuse_model,
+                             eval_before_fuse=eval_before_fuse)
     # TODO: other models
     else:
         raise ValueError(f'model {model_name} is not supported.')
