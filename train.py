@@ -42,6 +42,16 @@ def parse_arg():
                         default=[210, 270])
     parser.add_argument('--lr', type=float, default=0.005)
     parser.add_argument('--batch_size', type=int, default=64)
+    parser.add_argument(
+        '--observer_update_epochs',
+        default=100000,  # not used in default
+        type=int,
+        help='number of total epochs to update observers')
+    parser.add_argument(
+        '--bn_update_epochs',
+        default=100000,  # not used in default
+        type=int,
+        help='number of total epochs to update batch norm stats')
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--device', default=None)
     parser.add_argument('--seed', type=int, default=1000)
@@ -117,19 +127,30 @@ def main():
                     group=exp_id,
                     config=args)
 
+    if enable_qat:
+        model.apply(torch.quantization.enable_observer)
+        model.apply(torch.quantization.enable_fake_quant)
+
     # train loop
-    for epoch in range(start_epoch,
-                       args.epochs):  # loop over the dataset multiple times
+    for epoch in range(start_epoch, args.epochs):
         logs = {'epoch': epoch}
 
         lr = scheduler.get_last_lr()[0]
         print(f'\nEpoch: {epoch} / {args.epochs}, lr: {lr:.9f}')
         logs['lr'] = lr
 
+        if enable_qat:
+            if epoch >= args.observer_update_epochs:
+                print('Disabling observer for subseq epochs, epoch = ', epoch)
+                model.apply(torch.quantization.disable_observer)
+            if epoch >= args.bn_update_epochs:
+                print('Freezing BN for subseq epochs, epoch = ', epoch)
+                model.apply(torch.nn.intrinsic.qat.freeze_bn_stats)
+
         # train
         loss_epoch = train(model, optimizer, scheduler, criterion, device,
                            train_dataloader)
-        print('loss: %.3f' % loss_epoch)
+        print('loss: %.8f' % loss_epoch)
         logs['train/loss'] = loss_epoch
 
         # test
