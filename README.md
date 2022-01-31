@@ -109,7 +109,7 @@ $ ls -lh models/exp_2001/scripted_*
 ## TODOs
 
 - [x] Add a table to show model accuracy and performance
-- [ ] Add more options for QAT (observer, etc.)
+- [x] Add more options for QAT (observer, etc.)
 - [ ] Add models
 - [ ] Finish docstring
 
