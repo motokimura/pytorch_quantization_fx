@@ -1,17 +1,22 @@
-# https://github.com/pytorch/vision/blob/master/torchvision/models/mobilenetv2.py
+# modified based on:
+# https://github.com/pytorch/vision/blob/v0.9.1/torchvision/models/quantization/mobilenetv2.py
 
 from typing import Any, Callable, List, Optional
 
 import torch
 from torch import Tensor, nn
 from torch.quantization import DeQuantStub, QuantStub, fuse_modules
-from torchvision.models.utils import load_state_dict_from_url
 
-__all__ = ['MobileNetV2', 'mobilenet_v2']
+# from torchvision.models.utils import load_state_dict_from_url
+try:
+    from torch.hub import load_state_dict_from_url
+except ImportError:
+    from torch.utils.model_zoo import load_url as load_state_dict_from_url
+
+__all__ = ["MobileNetV2", "mobilenet_v2"]
 
 model_urls = {
-    'mobilenet_v2':
-    'https://download.pytorch.org/models/mobilenet_v2-b0353104.pth',
+    "mobilenet_v2": "https://download.pytorch.org/models/mobilenet_v2-b0353104.pth",
 }
 
 
@@ -29,9 +34,7 @@ def _replace_relu(module):
         module._modules[key] = value
 
 
-def _make_divisible(v: float,
-                    divisor: int,
-                    min_value: Optional[int] = None) -> int:
+def _make_divisible(v: float, divisor: int, min_value: Optional[int] = None) -> int:
     """
     This function is taken from the original tf repo.
     It ensures that all layers have a channel number that is divisible by 8
@@ -65,15 +68,12 @@ class ConvBNActivation(nn.Sequential):
         if activation_layer is None:
             activation_layer = nn.ReLU6
         super().__init__(
-            nn.Conv2d(in_planes,
-                      out_planes,
-                      kernel_size,
-                      stride,
-                      padding,
-                      dilation=dilation,
-                      groups=groups,
-                      bias=False), norm_layer(out_planes),
-            activation_layer(inplace=True))
+            nn.Conv2d(
+                in_planes, out_planes, kernel_size, stride, padding, dilation=dilation, groups=groups, bias=False
+            ),
+            norm_layer(out_planes),
+            activation_layer(inplace=True),
+        )
         self.out_channels = out_planes
 
 
@@ -83,12 +83,8 @@ ConvBNReLU = ConvBNActivation
 
 class InvertedResidual(nn.Module):
     def __init__(
-            self,
-            inp: int,
-            oup: int,
-            stride: int,
-            expand_ratio: int,
-            norm_layer: Optional[Callable[..., nn.Module]] = None) -> None:
+        self, inp: int, oup: int, stride: int, expand_ratio: int, norm_layer: Optional[Callable[..., nn.Module]] = None
+    ) -> None:
         super(InvertedResidual, self).__init__()
         self.stride = stride
         assert stride in [1, 2]
@@ -102,22 +98,16 @@ class InvertedResidual(nn.Module):
         layers: List[nn.Module] = []
         if expand_ratio != 1:
             # pw
-            layers.append(
-                ConvBNReLU(inp,
-                           hidden_dim,
-                           kernel_size=1,
-                           norm_layer=norm_layer))
-        layers.extend([
-            # dw
-            ConvBNReLU(hidden_dim,
-                       hidden_dim,
-                       stride=stride,
-                       groups=hidden_dim,
-                       norm_layer=norm_layer),
-            # pw-linear
-            nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
-            norm_layer(oup),
-        ])
+            layers.append(ConvBNReLU(inp, hidden_dim, kernel_size=1, norm_layer=norm_layer))
+        layers.extend(
+            [
+                # dw
+                ConvBNReLU(hidden_dim, hidden_dim, stride=stride, groups=hidden_dim, norm_layer=norm_layer),
+                # pw-linear
+                nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
+                norm_layer(oup),
+            ]
+        )
         self.conv = nn.Sequential(*layers)
         self.out_channels = oup
         self._is_cn = stride > 1
@@ -140,13 +130,14 @@ class InvertedResidual(nn.Module):
 
 class MobileNetV2(nn.Module):
     def __init__(
-            self,
-            num_classes: int = 1000,
-            width_mult: float = 1.0,
-            inverted_residual_setting: Optional[List[List[int]]] = None,
-            round_nearest: int = 8,
-            block: Optional[Callable[..., nn.Module]] = None,
-            norm_layer: Optional[Callable[..., nn.Module]] = None) -> None:
+        self,
+        num_classes: int = 1000,
+        width_mult: float = 1.0,
+        inverted_residual_setting: Optional[List[List[int]]] = None,
+        round_nearest: int = 8,
+        block: Optional[Callable[..., nn.Module]] = None,
+        norm_layer: Optional[Callable[..., nn.Module]] = None,
+    ) -> None:
         """
         MobileNet V2 main class
         Args:
@@ -182,17 +173,15 @@ class MobileNetV2(nn.Module):
             ]
 
         # only check the first element, assuming user knows t,c,n,s are required
-        if len(inverted_residual_setting) == 0 or len(
-                inverted_residual_setting[0]) != 4:
-            raise ValueError("inverted_residual_setting should be non-empty "
-                             "or a 4-element list, got {}".format(
-                                 inverted_residual_setting))
+        if len(inverted_residual_setting) == 0 or len(inverted_residual_setting[0]) != 4:
+            raise ValueError(
+                "inverted_residual_setting should be non-empty "
+                "or a 4-element list, got {}".format(inverted_residual_setting)
+            )
 
         # building first layer
-        input_channel = _make_divisible(input_channel * width_mult,
-                                        round_nearest)
-        self.last_channel = _make_divisible(
-            last_channel * max(1.0, width_mult), round_nearest)
+        input_channel = _make_divisible(input_channel * width_mult, round_nearest)
+        self.last_channel = _make_divisible(last_channel * max(1.0, width_mult), round_nearest)
         features: List[nn.Module] = [
             # stride: 2->1
             ConvBNReLU(3, input_channel, stride=1, norm_layer=norm_layer)
@@ -202,19 +191,10 @@ class MobileNetV2(nn.Module):
             output_channel = _make_divisible(c * width_mult, round_nearest)
             for i in range(n):
                 stride = s if i == 0 else 1
-                features.append(
-                    block(input_channel,
-                          output_channel,
-                          stride,
-                          expand_ratio=t,
-                          norm_layer=norm_layer))
+                features.append(block(input_channel, output_channel, stride, expand_ratio=t, norm_layer=norm_layer))
                 input_channel = output_channel
         # building last several layers
-        features.append(
-            ConvBNReLU(input_channel,
-                       self.last_channel,
-                       kernel_size=1,
-                       norm_layer=norm_layer))
+        features.append(ConvBNReLU(input_channel, self.last_channel, kernel_size=1, norm_layer=norm_layer))
         # make it nn.Sequential
         self.features = nn.Sequential(*features)
 
@@ -227,7 +207,7 @@ class MobileNetV2(nn.Module):
         # weight initialization
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out")
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
             elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
@@ -259,16 +239,14 @@ class MobileNetV2(nn.Module):
     def fuse_model(self):
         for m in self.modules():
             if type(m) == ConvBNReLU:
-                fuse_modules(m, ['0', '1', '2'], inplace=True)
+                fuse_modules(m, ["0", "1", "2"], inplace=True)
             if type(m) == InvertedResidual:
                 m.fuse_model()
 
 
-def mobilenet_v2(pretrained=None,
-                 replace_relu=False,
-                 fuse_model=False,
-                 eval_before_fuse=True,
-                 **kwargs: Any) -> MobileNetV2:
+def mobilenet_v2(
+    pretrained=None, replace_relu=False, fuse_model=False, eval_before_fuse=True, **kwargs: Any
+) -> MobileNetV2:
     """
     Constructs a MobileNetV2 architecture from
     `"MobileNetV2: Inverted Residuals and Linear Bottlenecks" <https://arxiv.org/abs/1801.04381>`_.
@@ -281,9 +259,8 @@ def mobilenet_v2(pretrained=None,
     model = MobileNetV2(**kwargs)
 
     if pretrained is not None:
-        if pretrained == 'imagenet':
-            state_dict = load_state_dict_from_url(model_urls['mobilenet_v2'],
-                                                  progress=True)
+        if pretrained == "imagenet":
+            state_dict = load_state_dict_from_url(model_urls["mobilenet_v2"], progress=True)
         else:
             state_dict = torch.load(pretrained)
         model.load_state_dict(state_dict)
@@ -298,7 +275,7 @@ def mobilenet_v2(pretrained=None,
         # this operation does not change the numerics
         # this can both make the model faster by saving on memory access while also improving numerical accuracy
         # while this can be used with any model, this is especially common with quantized models
-        assert replace_relu, '`replace_relu` must be True if you want to fuse modules.'
+        assert replace_relu, "`replace_relu` must be True if you want to fuse modules."
 
         if eval_before_fuse:
             model.eval()
