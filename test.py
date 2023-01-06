@@ -61,11 +61,11 @@ def main():
             eval_before_fuse=True,
         )
         # XXX: arg `pretrained` assumes the model pretrained w/ mode='normal' & fuse_model=False
-        model.qconfig = torch.quantization.get_default_qconfig(args.quantization_backend)
-        torch.quantization.prepare(model, inplace=True)
+        model.qconfig = torch.ao.quantization.get_default_qconfig(args.quantization_backend)
+        torch.ao.quantization.prepare(model, inplace=True)
         # calibrate
         calibrate_for_ptq(model, train_dataloader, args.n_calib_batch)
-        torch.quantization.convert(model.eval(), inplace=True)
+        torch.ao.quantization.convert(model.eval(), inplace=True)
     else:
         state_dict = torch.load(model_path)
         model = get_model(
@@ -78,10 +78,10 @@ def main():
         if args.mode == "normal":
             model.load_state_dict(state_dict)
         elif args.mode == "qat":
-            model.qconfig = torch.quantization.get_default_qat_qconfig(args.quantization_backend)
-            torch.quantization.prepare_qat(model, inplace=True)
+            model.qconfig = torch.ao.quantization.get_default_qat_qconfig(args.quantization_backend)
+            torch.ao.quantization.prepare_qat(model, inplace=True)
             model.load_state_dict(state_dict)
-            torch.quantization.convert(model.eval(), inplace=True)
+            torch.ao.quantization.convert(model.eval(), inplace=True)
         else:
             raise ValueError(f"{args.mode} is not supported.")
 

@@ -109,8 +109,8 @@ def main():
         eval_before_fuse=False,
     )
     if enable_qat:
-        model.qconfig = torch.quantization.get_default_qat_qconfig(args.quantization_backend)
-        torch.quantization.prepare_qat(model, inplace=True)
+        model.qconfig = torch.ao.quantization.get_default_qat_qconfig(args.quantization_backend)
+        torch.ao.quantization.prepare_qat(model, inplace=True)
     model.to(device)
 
     criterion = nn.CrossEntropyLoss()
@@ -135,8 +135,8 @@ def main():
     configure_wandb(project="pytorch_ptq_cifar", group=exp_id, config=args)
 
     if enable_qat:
-        model.apply(torch.quantization.enable_observer)
-        model.apply(torch.quantization.enable_fake_quant)
+        model.apply(torch.ao.quantization.enable_observer)
+        model.apply(torch.ao.quantization.enable_fake_quant)
 
     # train loop
     for epoch in range(start_epoch, args.epochs):
@@ -149,7 +149,7 @@ def main():
         if enable_qat:
             if epoch >= args.observer_update_epochs:
                 print("Disabling observer for subseq epochs, epoch = ", epoch)
-                model.apply(torch.quantization.disable_observer)
+                model.apply(torch.ao.quantization.disable_observer)
             if epoch >= args.bn_update_epochs:
                 print("Freezing BN for subseq epochs, epoch = ", epoch)
                 model.apply(torch.nn.intrinsic.qat.freeze_bn_stats)
@@ -169,7 +169,7 @@ def main():
             print("Evaluating quantized model...")
             model_quantized = copy.deepcopy(model)
             model_quantized.to(torch.device("cpu"))
-            model_quantized = torch.quantization.convert(model_quantized.eval(), inplace=False)
+            model_quantized = torch.ao.quantization.convert(model_quantized.eval(), inplace=False)
             accuracy = test(model_quantized, torch.device("cpu"), test_dataloader)
             print("accuracy (quantized): %.4f" % accuracy)
             logs["test/accuracy"] = accuracy

@@ -1,11 +1,12 @@
 # modified based on:
+# https://github.com/pytorch/vision/blob/v0.9.1/torchvision/models/mobilenetv2.py
 # https://github.com/pytorch/vision/blob/v0.9.1/torchvision/models/quantization/mobilenetv2.py
 
 from typing import Any, Callable, List, Optional
 
 import torch
 from torch import Tensor, nn
-from torch.quantization import DeQuantStub, QuantStub, fuse_modules
+from torch.ao.quantization import DeQuantStub, QuantStub, fuse_modules
 
 # from torchvision.models.utils import load_state_dict_from_url
 try:
