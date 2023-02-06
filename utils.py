@@ -2,12 +2,11 @@ import random
 
 import numpy as np
 import torch
+import torch.nn as nn
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torchvision.datasets import CIFAR10
 from tqdm import tqdm
-
-from mobilenetv2 import mobilenet_v2
 
 
 def set_seed(seed):
@@ -93,18 +92,6 @@ def prepare_dataloaders(batch_size):
     return train_dataloader, test_dataloader
 
 
-def get_model(model_name, pretrained="imagenet", replace_relu=False, fuse_model=False, eval_before_fuse=True):
-    if model_name == "mobilenetv2":
-        model = mobilenet_v2(
-            pretrained=pretrained, replace_relu=replace_relu, fuse_model=fuse_model, eval_before_fuse=eval_before_fuse
-        )
-    # TODO: other models
-    else:
-        raise ValueError(f"model {model_name} is not supported.")
-
-    return model.eval()
-
-
 def train(model, optimizer, scheduler, criterion, device, train_dataloader):
     model.train()
     loss_epoch = 0.0
@@ -146,15 +133,29 @@ def test(model, device, test_dataloader):
     return accuracy
 
 
-def calibrate_for_ptq(model, train_dataloader, n_calib_batch):
+def calibrate(model, train_dataloader, n_calib_batch):
     model.eval()
-    model.to(torch.device("cpu"))  # quantization is not yet supported for cuda
     batch_count = 0
     with torch.no_grad():
         for data in tqdm(train_dataloader, total=n_calib_batch, desc="calib"):
+            # quantization with PyTorch does not support cuda
             inputs = data[0].to(torch.device("cpu"))
             model(inputs)
 
             batch_count += 1
             if batch_count > n_calib_batch:
                 break
+
+
+def replace_relu(module):
+    reassign = {}
+    for name, mod in module.named_children():
+        replace_relu(mod)
+        # Checking for explicit type instead of instance
+        # as we only want to replace modules of the exact type
+        # not inherited classes
+        if type(mod) == nn.ReLU or type(mod) == nn.ReLU6:
+            reassign[name] = nn.ReLU(inplace=False)
+
+    for key, value in reassign.items():
+        module._modules[key] = value

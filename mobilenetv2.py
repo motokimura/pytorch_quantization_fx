@@ -6,7 +6,6 @@ from typing import Any, Callable, List, Optional
 
 import torch
 from torch import Tensor, nn
-from torch.ao.quantization import DeQuantStub, QuantStub, fuse_modules
 
 # from torchvision.models.utils import load_state_dict_from_url
 try:
@@ -19,20 +18,6 @@ __all__ = ["MobileNetV2", "mobilenet_v2"]
 model_urls = {
     "mobilenet_v2": "https://download.pytorch.org/models/mobilenet_v2-b0353104.pth",
 }
-
-
-def _replace_relu(module):
-    reassign = {}
-    for name, mod in module.named_children():
-        _replace_relu(mod)
-        # Checking for explicit type instead of instance
-        # as we only want to replace modules of the exact type
-        # not inherited classes
-        if type(mod) == nn.ReLU or type(mod) == nn.ReLU6:
-            reassign[name] = nn.ReLU(inplace=False)
-
-    for key, value in reassign.items():
-        module._modules[key] = value
 
 
 def _make_divisible(v: float, divisor: int, min_value: Optional[int] = None) -> int:
@@ -122,11 +107,6 @@ class InvertedResidual(nn.Module):
             return self.skip_add.add(x, self.conv(x))
         else:
             return self.conv(x)
-
-    def fuse_model(self):
-        for idx in range(len(self.conv)):
-            if type(self.conv[idx]) == nn.Conv2d:
-                fuse_modules(self.conv, [str(idx), str(idx + 1)], inplace=True)
 
 
 class MobileNetV2(nn.Module):
@@ -218,9 +198,6 @@ class MobileNetV2(nn.Module):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.zeros_(m.bias)
 
-        self.quant = QuantStub()
-        self.dequant = DeQuantStub()
-
     def _forward_impl(self, x: Tensor) -> Tensor:
         # This exists since TorchScript doesn't support inheritance, so the superclass method
         # (this one) needs to have a name other than `forward` that can be accessed in a subclass
@@ -232,60 +209,19 @@ class MobileNetV2(nn.Module):
         return x
 
     def forward(self, x: Tensor) -> Tensor:
-        x = self.quant(x)
         x = self._forward_impl(x)
-        x = self.dequant(x)
         return x
 
-    def fuse_model(self):
-        for m in self.modules():
-            if type(m) == ConvBNReLU:
-                fuse_modules(m, ["0", "1", "2"], inplace=True)
-            if type(m) == InvertedResidual:
-                m.fuse_model()
 
-
-def mobilenet_v2(
-    pretrained=None, replace_relu=False, fuse_model=False, eval_before_fuse=True, **kwargs: Any
-) -> MobileNetV2:
+def mobilenet_v2(**kwargs: Any) -> MobileNetV2:
     """
     Constructs a MobileNetV2 architecture from
     `"MobileNetV2: Inverted Residuals and Linear Bottlenecks" <https://arxiv.org/abs/1801.04381>`_.
-    Args:
-        pretrained (str): path to pretrained weight file.
-        replace_relu (bool):
-        fuse_model (bool):
-        eval_before_fuse (bool):
     """
     model = MobileNetV2(**kwargs)
 
-    if pretrained is not None:
-        if pretrained == "imagenet":
-            state_dict = load_state_dict_from_url(model_urls["mobilenet_v2"], progress=True)
-        else:
-            state_dict = torch.load(pretrained)
-        model.load_state_dict(state_dict)
+    # always start from ImageNet pre-trained weight
+    state_dict = load_state_dict_from_url(model_urls["mobilenet_v2"], progress=True)
+    model.load_state_dict(state_dict)
 
-    if replace_relu:
-        # replace ReLU6 with ReLU
-        # so that we can "fuse" Conv+BN+ReLU modules later
-        _replace_relu(model)
-
-    if fuse_model:
-        # fuse Conv+BN and Conv+BN+ReLU modules prior to quantization
-        # this operation does not change the numerics
-        # this can both make the model faster by saving on memory access while also improving numerical accuracy
-        # while this can be used with any model, this is especially common with quantized models
-        assert replace_relu, "`replace_relu` must be True if you want to fuse modules."
-
-        if eval_before_fuse:
-            model.eval()
-        else:
-            model.train()
-
-        # fuse Conv+BN and Conv+BN+ReLU modules
-        model.fuse_model()
-
-    model.eval()
-
-    return model
+    return model.eval()
