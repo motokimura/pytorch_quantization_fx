@@ -1,3 +1,4 @@
+import os
 import random
 
 import numpy as np
@@ -57,16 +58,18 @@ def load_checkpoint(checkpoint_path, model, optimizer, scheduler, epoch, best_ac
 def configure_wandb(project=None, group=None, config=None):
     from os import environ
 
-    from dotenv import load_dotenv
-
     import wandb
+    from dotenv import load_dotenv
 
     load_dotenv()  # load WANDB_API_KEY from .env file
     assert (
         "WANDB_API_KEY" in environ
     ), '"WANDB_API_KEY" is empty. Create ".env" file with your W&B API key. See ".env.sample" for the file format'
 
-    wandb.init(project=project, group=group, config=config)
+    wandb_dir = "./.wandb"
+    os.makedirs(wandb_dir, exist_ok=True)
+
+    wandb.init(project=project, group=group, config=config, dir=wandb_dir)
 
 
 def prepare_dataloaders(batch_size):
