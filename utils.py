@@ -30,28 +30,28 @@ def configure_cudnn(deterministic=True, benchmark=False):
     torch.backends.cudnn.deterministic = deterministic
 
 
-def save_checkpoint(checkpoint_path, model, optimizer, scheduler, epoch, best_accuracy, best_accuracy_epoch):
+def save_checkpoint(checkpoint_path, model, optimizer, scheduler, epoch, best_accuracy, epoch_at_best_accuracy):
     checkpoint = {
         "model": model.state_dict(),
         "optimizer": optimizer.state_dict(),
         "scheduler": scheduler.state_dict(),
         "epoch": epoch,
         "best_accuracy": best_accuracy,
-        "best_accuracy_epoch": best_accuracy_epoch,
+        "epoch_at_best_accuracy": epoch_at_best_accuracy,
     }
     torch.save(checkpoint, checkpoint_path)
 
 
-def load_checkpoint(checkpoint_path, model, optimizer, scheduler, epoch, best_accuracy, best_accuracy_epoch):
+def load_checkpoint(checkpoint_path, model, optimizer, scheduler, epoch, best_accuracy, epoch_at_best_accuracy):
     checkpoint = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint["model"])
     optimizer.load_state_dict(checkpoint["optimizer"])
     scheduler.load_state_dict(checkpoint["scheduler"])
     epoch = checkpoint["epoch"]
     best_accuracy = checkpoint["best_accuracy"]
-    best_accuracy_epoch = checkpoint["best_accuracy_epoch"]
+    epoch_at_best_accuracy = checkpoint["epoch_at_best_accuracy"]
 
-    return model, optimizer, scheduler, epoch, best_accuracy, best_accuracy_epoch
+    return model, optimizer, scheduler, epoch, best_accuracy, epoch_at_best_accuracy
 
 
 def configure_wandb(project=None, group=None, config=None):

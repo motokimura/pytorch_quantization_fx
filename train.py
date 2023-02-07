@@ -1,7 +1,6 @@
 # https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
 
 import argparse
-import copy
 import datetime
 import json
 import os
@@ -11,10 +10,10 @@ import torch.nn as nn
 import torch.optim as optim
 
 import wandb
+from mobilenetv2 import mobilenet_v2
 from utils import (
     configure_cudnn,
     configure_wandb,
-    get_model,
     load_checkpoint,
     prepare_dataloaders,
     save_checkpoint,
@@ -27,37 +26,12 @@ from utils import (
 def parse_arg():
     parser = argparse.ArgumentParser()
     parser.add_argument("exp_id", type=int)
-    parser.add_argument("--model", choices=["mobilenetv2"], default="mobilenetv2")
-    parser.add_argument(
-        "--mode",
-        choices=["normal", "qat"],
-        # normal: training w/o quantization
-        # qat: quantization-aware-training
-        default="normal",
-    )
-
-    parser.add_argument("--replace_relu", action="store_true")
-    parser.add_argument("--fuse_model", action="store_true")
-    parser.add_argument("--quantization_backend", choices=["qnnpack", "fbgemm"], default="fbgemm")
-    parser.add_argument("--pretrained", default="imagenet")
     parser.add_argument("--epochs", type=int, default=300)
     parser.add_argument("--lr_drop_epochs", type=int, nargs="+", default=[210, 270])
     parser.add_argument("--lr", type=float, default=0.005)
     parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument(
-        "--observer_update_epochs",
-        default=100000,  # not used in default
-        type=int,
-        help="number of total epochs to update observers",
-    )
-    parser.add_argument(
-        "--bn_update_epochs",
-        default=100000,  # not used in default
-        type=int,
-        help="number of total epochs to update batch norm stats",
-    )
     parser.add_argument("--resume", action="store_true")
-    parser.add_argument("--device", default=None)
+    parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--seed", type=int, default=1000)
     parser.add_argument("--model_dir", default="models")
     return parser.parse_args()
@@ -65,10 +39,6 @@ def parse_arg():
 
 def main():
     args = parse_arg()
-
-    torch.backends.quantized.engine = args.quantization_backend
-
-    enable_qat = args.mode == "qat"
 
     # fix random seed
     set_seed(args.seed)
@@ -90,27 +60,14 @@ def main():
     with open(os.path.join(exp_dir, f"{time_str}.json"), mode="w") as f:
         json.dump(args.__dict__, f, indent=4)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    if args.device is not None:
-        device = torch.device(args.device)
+    device = torch.device(args.device)
     print(f"device: {device}")
 
     print("Preparing dataset...")
     train_dataloader, test_dataloader = prepare_dataloaders(args.batch_size)
 
     print("Preparing model...")
-    if args.pretrained == "":
-        args.pretrained = None
-    model = get_model(
-        args.model,
-        pretrained=args.pretrained,
-        replace_relu=args.replace_relu,
-        fuse_model=args.fuse_model,
-        eval_before_fuse=False,
-    )
-    if enable_qat:
-        model.qconfig = torch.ao.quantization.get_default_qat_qconfig(args.quantization_backend)
-        torch.ao.quantization.prepare_qat(model, inplace=True)
+    model = mobilenet_v2()
     model.to(device)
 
     criterion = nn.CrossEntropyLoss()
@@ -118,25 +75,21 @@ def main():
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=args.lr_drop_epochs, gamma=0.1)
     start_epoch = 0
     best_accuracy = -1
-    best_accuracy_epoch = -1
+    epoch_at_best_accuracy = -1
 
     if args.resume:
-        model, optimizer, scheduler, start_epoch, best_accuracy, best_accuracy_epoch = load_checkpoint(
+        model, optimizer, scheduler, start_epoch, best_accuracy, epoch_at_best_accuracy = load_checkpoint(
             os.path.join(exp_dir, "checkpoint_latest.pth"),
             model,
             optimizer,
             scheduler,
             start_epoch,
             best_accuracy,
-            best_accuracy_epoch,
+            epoch_at_best_accuracy,
         )
         start_epoch += 1
 
-    configure_wandb(project="pytorch_ptq_cifar", group=exp_id, config=args)
-
-    if enable_qat:
-        model.apply(torch.ao.quantization.enable_observer)
-        model.apply(torch.ao.quantization.enable_fake_quant)
+    configure_wandb(project="pytorch_quantization_fx", group=exp_id, config=args)
 
     # train loop
     for epoch in range(start_epoch, args.epochs):
@@ -145,14 +98,6 @@ def main():
         lr = scheduler.get_last_lr()[0]
         print(f"\nEpoch: {epoch} / {args.epochs}, lr: {lr:.9f}")
         logs["lr"] = lr
-
-        if enable_qat:
-            if epoch >= args.observer_update_epochs:
-                print("Disabling observer for subseq epochs, epoch = ", epoch)
-                model.apply(torch.ao.quantization.disable_observer)
-            if epoch >= args.bn_update_epochs:
-                print("Freezing BN for subseq epochs, epoch = ", epoch)
-                model.apply(torch.nn.intrinsic.qat.freeze_bn_stats)
 
         # train
         loss_epoch = train(model, optimizer, scheduler, criterion, device, train_dataloader)
@@ -164,21 +109,11 @@ def main():
         print("accuracy: %.4f" % accuracy)
         logs["test/accuracy"] = accuracy
 
-        if enable_qat:
-            # test with quantized model
-            print("Evaluating quantized model...")
-            model_quantized = copy.deepcopy(model)
-            model_quantized.to(torch.device("cpu"))
-            model_quantized = torch.ao.quantization.convert(model_quantized.eval(), inplace=False)
-            accuracy = test(model_quantized, torch.device("cpu"), test_dataloader)
-            print("accuracy (quantized): %.4f" % accuracy)
-            logs["test/accuracy"] = accuracy
-
         if accuracy > best_accuracy:
             best_accuracy = accuracy
-            best_accuracy_epoch = epoch
+            epoch_at_best_accuracy = epoch
 
-            print("Best accuracy updated. Saving models...")
+            print("Best accuracy updated. Saving model...")
             model_path = os.path.join(exp_dir, "best_model.pth")
             model.to(torch.device("cpu"))
             torch.save(model.state_dict(), model_path)
@@ -193,15 +128,15 @@ def main():
             scheduler,
             epoch,
             best_accuracy,
-            best_accuracy_epoch,
+            epoch_at_best_accuracy,
         )
 
         logs["test/best_accuracy"] = best_accuracy
-        logs["test/best_accuracy_epoch"] = best_accuracy_epoch
+        logs["test/epoch_at_best_accuracy"] = epoch_at_best_accuracy
 
         wandb.log(logs)
 
-    print("Reached best accuract %.4f at epoch %d" % (best_accuracy, best_accuracy_epoch))
+    print("Reached best accuracy %.4f at epoch %d" % (best_accuracy, epoch_at_best_accuracy))
 
     wandb.finish()
 

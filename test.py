@@ -57,9 +57,9 @@ def main():
         # replace ReLU6 with ReLU so that we can "fuse" Conv+BN+ReLU modules later
         replace_relu(model)
         # prepare model for ptq
-        qconfig_mapping = {"": torch.quantization.get_default_qconfig(args.quantization_backend)}
+        qconfig = {"": torch.quantization.get_default_qconfig(args.quantization_backend)}
         example_inputs = (torch.randn(1, 3, 32, 32),)
-        model = quantize_fx.prepare_fx(model.eval(), qconfig_mapping, example_inputs)
+        model = quantize_fx.prepare_fx(model.eval(), qconfig, example_inputs)
         # calibrate and convert
         calibrate(model, train_dataloader, args.n_calib_batch)
         model = quantize_fx.convert_fx(model.eval())
