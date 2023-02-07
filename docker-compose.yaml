@@ -3,9 +3,8 @@ services:
   dev:
     runtime: nvidia
     build:
-      context: .
+      context: ./docker
     volumes:
-      - ${HOME}/data:/data
       - ${PWD}:/work
     tty: true
     ipc: host  # necessary to avoid torch dataloader error

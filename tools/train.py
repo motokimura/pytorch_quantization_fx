@@ -10,8 +10,8 @@ import torch.nn as nn
 import torch.optim as optim
 import wandb
 
-from mobilenetv2 import mobilenet_v2
-from utils import (
+from lib.mobilenetv2 import mobilenet_v2
+from lib.utils import (
     configure_cudnn,
     configure_wandb,
     load_checkpoint,

@@ -5,8 +5,8 @@ import torch
 from torch.quantization import quantize_fx
 from tqdm import tqdm
 
-from mobilenetv2 import mobilenet_v2
-from utils import calibrate, configure_cudnn, prepare_dataloaders, replace_relu, set_seed, test
+from lib.mobilenetv2 import mobilenet_v2
+from lib.utils import calibrate, configure_cudnn, prepare_dataloaders, replace_relu, set_seed, test
 
 
 def parse_arg():
