@@ -34,11 +34,16 @@ Pretrained weights are available:
 unzip models_v3.zip
 ```
 
-- `models/exp_3000/best_model.pth`: float model
+```
+models
+└── exp_3000
+    ├── 20230207_03:59:54.json
+    └── best_model.pth  # float model
+```
 
 ## Post training static quantization
 
-You need to train float model first (can be skipped if you use the pretrained weight above):
+Train float model first (can be skipped if you use the pretrained weight above):
 
 ```
 EXP_ID=3000
@@ -53,7 +58,7 @@ To evaluate this model:
 python tools/test.py $EXP_ID --mode float
 ```
 
-You can apply post training static quantization to this float model:
+Apply post training static quantization to this float model:
 
 ```
 python tools/test.py $EXP_ID --mode ptq
