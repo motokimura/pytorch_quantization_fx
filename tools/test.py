@@ -14,10 +14,10 @@ def parse_arg():
     parser.add_argument("exp_id", type=int)
     parser.add_argument(
         "--mode",
-        choices=["normal", "ptq"],
-        # normal: evaluation w/o quantization
+        choices=["float", "ptq"],
+        # float: evaluation w/o quantization
         # ptq: post-training-quantization
-        default="normal",
+        default="float",
     )
     parser.add_argument("--quantization_backend", choices=["qnnpack", "fbgemm"], default="fbgemm")
     parser.add_argument("--batch_size", type=int, default=32)
