@@ -1,6 +1,6 @@
 data
 models
-wandb
+.wandb
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,jupyternotebooks,macos,linux,visualstudiocode,pycharm
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,jupyternotebooks,macos,linux,visualstudiocode,pycharm
