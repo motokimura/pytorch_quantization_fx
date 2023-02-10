@@ -24,7 +24,13 @@ Get your API key from [W&B](https://wandb.ai) > `Settings` > `API keys` and then
 echo 'WANDB_API_KEY = "xxxx"' > .env  # replace xxxx with your own W&B API key
 ```
 
-When you run `tools/train.py`, the API key will be loaded from `.env` to send training logs to W&B.
+When you run `tools/train.py`, the API key will be loaded from `.env` to send training logs to W&B. 
+
+If `tools/train.py` fails to send git logs to W&B, run following and re-run `tools/train.py`.
+
+```
+git config --global --add safe.directory /work
+```
 
 ## Pretrained weights
 
