@@ -1,6 +1,7 @@
 # https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
 
 import argparse
+import copy
 import datetime
 import json
 import os
@@ -9,6 +10,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import wandb
+from torch.quantization import get_default_qat_qconfig, quantize_fx
 
 from lib.mobilenetv2 import mobilenet_v2
 from lib.utils import (
@@ -16,6 +18,7 @@ from lib.utils import (
     configure_wandb,
     load_checkpoint,
     prepare_dataloaders,
+    replace_relu,
     save_checkpoint,
     set_seed,
     test,
@@ -26,6 +29,8 @@ from lib.utils import (
 def parse_arg():
     parser = argparse.ArgumentParser()
     parser.add_argument("exp_id", type=int)
+    parser.add_argument("--qat", action="store_true")
+    parser.add_argument("--backend", choices=["qnnpack", "fbgemm"], default="fbgemm")
     parser.add_argument("--epochs", type=int, default=300)
     parser.add_argument("--lr_drop_epochs", type=int, nargs="+", default=[210, 270])
     parser.add_argument("--lr", type=float, default=0.005)
@@ -68,6 +73,13 @@ def main():
 
     print("Preparing model...")
     model = mobilenet_v2()
+    if args.qat:
+        # replace ReLU6 with ReLU so that we can "fuse" Conv+BN+ReLU modules later
+        replace_relu(model)
+        # prepare model for qat
+        qconfig = {"": get_default_qat_qconfig(args.backend)}
+        example_inputs = (torch.randn(1, 3, 32, 32),)
+        model = quantize_fx.prepare_qat_fx(model.train(), qconfig, example_inputs)
     model.to(device)
 
     criterion = nn.CrossEntropyLoss()
@@ -108,6 +120,16 @@ def main():
         accuracy = test(model, device, test_dataloader)
         print("accuracy: %.4f" % accuracy)
         logs["test/accuracy"] = accuracy
+
+        if args.qat:
+            # test with quantized model
+            print("Evaluating quantized model...")
+            model_quantized = copy.deepcopy(model)
+            model_quantized.to(torch.device("cpu"))
+            model_quantized = quantize_fx.convert_fx(model_quantized.eval())
+            accuracy = test(model_quantized, torch.device("cpu"), test_dataloader)
+            print("accuracy (quantized): %.4f" % accuracy)
+            logs["test/accuracy"] = accuracy
 
         if accuracy > best_accuracy:
             best_accuracy = accuracy

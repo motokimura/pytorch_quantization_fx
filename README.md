@@ -1,7 +1,7 @@
 # pytorch_quantization_fx
 
 With this repository, you can try model quantization of MobileNetV2 trained on CIFAR-10 dataset.
-Currently, only post training static quantization is supported.
+Post training static quantization and quzntization aware training is supported.
 
 |model               |quantization method                |CIFAR-10 test accuracy [%] |model size [MB]
 |---                 |---                                |---                      |---
@@ -24,9 +24,9 @@ Get your API key from [W&B](https://wandb.ai) > `Settings` > `API keys` and then
 echo 'WANDB_API_KEY = "xxxx"' > .env  # replace xxxx with your own W&B API key
 ```
 
-When you run `tools/train.py`, the API key will be loaded from `.env` to send training logs to W&B. 
+When you run `tools/train.py`, the API key will be loaded from `.env` to login W&B.
 
-If `tools/train.py` fails to send git logs to W&B, run following and re-run `tools/train.py`.
+If `tools/train.py` failed to send logs to W&B, run following and re-run `tools/train.py`.
 
 ```
 git config --global --add safe.directory /work
@@ -61,13 +61,13 @@ Trained weight is saved into `models/exp_3000/best_model.pth`.
 To evaluate this model:
 
 ```
-python tools/test.py $EXP_ID --mode float
+python tools/test.py $EXP_ID
 ```
 
 Apply post training static quantization to this float model:
 
 ```
-python tools/test.py $EXP_ID --mode ptq
+python tools/test.py $EXP_ID --ptq
 ```
 
 To compare the model size:
@@ -78,6 +78,33 @@ ls -lh models/exp_3000/scripted_*
 ...
 -rw-r--r-- 1 root root  14M Feb  8 00:01 models/exp_3000/scripted_model_float.pth  # float
 -rw-r--r-- 1 root root 3.8M Feb  7 23:58 models/exp_3000/scripted_model_ptq.pth  # quantized (with post training static quantization)
+...
+```
+
+## Quantization aware training
+
+Train model with quntization aware training (can be skipped if you use the pretrained weight above):
+
+```
+EXP_ID=4001
+python tools/train.py $EXP_ID --qat
+```
+
+Trained weight is saved into `models/exp_4001/best_model.pth`.
+
+To evaluate this model:
+
+```
+python tools/test.py $EXP_ID --qat
+```
+
+To check the model size:
+
+```
+ls -lh models/exp_4001/scripted_*
+
+...
+TODO
 ...
 ```
 
