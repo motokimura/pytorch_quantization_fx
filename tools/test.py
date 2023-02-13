@@ -2,7 +2,7 @@ import argparse
 import os
 
 import torch
-from torch.quantization import quantize_fx
+from torch.quantization import get_default_qat_qconfig, get_default_qconfig, quantize_fx
 from tqdm import tqdm
 
 from lib.mobilenetv2 import mobilenet_v2
@@ -12,26 +12,22 @@ from lib.utils import calibrate, configure_cudnn, prepare_dataloaders, replace_r
 def parse_arg():
     parser = argparse.ArgumentParser()
     parser.add_argument("exp_id", type=int)
-    parser.add_argument(
-        "--mode",
-        choices=["float", "ptq"],
-        # float: evaluation w/o quantization
-        # ptq: post-training-quantization
-        default="float",
-    )
-    parser.add_argument("--quantization_backend", choices=["qnnpack", "fbgemm"], default="fbgemm")
+    parser.add_argument("--backend", choices=["qnnpack", "fbgemm"], default="fbgemm")
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--n_calib_batch", type=int, default=32)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--seed", type=int, default=1000)
     parser.add_argument("--model_dir", default="models")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--ptq", action="store_true")  # quantization-aware-training
+    group.add_argument("--qat", action="store_true")  # post-training-quantization
     return parser.parse_args()
 
 
 def main():
     args = parse_arg()
 
-    torch.backends.quantized.engine = args.quantization_backend
+    torch.backends.quantized.engine = args.backend
 
     # fix random seed
     set_seed(args.seed)
@@ -40,7 +36,7 @@ def main():
     exp_id = f"exp_{args.exp_id:04d}"
     exp_dir = os.path.join(args.model_dir, exp_id)
 
-    if args.mode == "ptq":
+    if args.ptq or args.qat:
         assert args.device == "cpu", "cuda is not supported in quantization with PyTorch"
     device = torch.device(args.device)
     print(f"device: {device}")
@@ -52,17 +48,30 @@ def main():
     model = mobilenet_v2()
     model_path = os.path.join(exp_dir, "best_model.pth")
     state_dict = torch.load(model_path)
-    model.load_state_dict(state_dict)
-    if args.mode == "ptq":
+    example_inputs = (torch.randn(1, 3, 32, 32),)
+    if args.qat:
+        # replace ReLU6 with ReLU so that we can "fuse" Conv+BN+ReLU modules later
+        replace_relu(model)
+        # prepare model for qat
+        qconfig = {"": get_default_qat_qconfig(args.backend)}
+        model = quantize_fx.prepare_qat_fx(model.train(), qconfig, example_inputs)
+        # in qat, weight must be loaded after prepare_qat_fx and before convert_fx
+        model.load_state_dict(state_dict)
+        # convert
+        model = quantize_fx.convert_fx(model.eval())
+    elif args.ptq:
+        model.load_state_dict(state_dict)
         # replace ReLU6 with ReLU so that we can "fuse" Conv+BN+ReLU modules later
         replace_relu(model)
         # prepare model for ptq
-        qconfig = {"": torch.quantization.get_default_qconfig(args.quantization_backend)}
-        example_inputs = (torch.randn(1, 3, 32, 32),)
+        qconfig = {"": get_default_qconfig(args.backend)}
         model = quantize_fx.prepare_fx(model.eval(), qconfig, example_inputs)
         # calibrate and convert
         calibrate(model, train_dataloader, args.n_calib_batch)
         model = quantize_fx.convert_fx(model.eval())
+    else:
+        model.load_state_dict(state_dict)
+
     model.to(device)
 
     print("Warming up...")
@@ -77,7 +86,13 @@ def main():
     # save jit scripted model to see how much quantization reduces the model size
     # you can evaluate this scripted model with `test_scripted.py`
     # the accuracy shoule be the same
-    scripted_model_path = os.path.join(exp_dir, f"scripted_model_{args.mode}.pth")
+    if args.ptq:
+        mode = "ptq"
+    elif args.qat:
+        mode = "qat"
+    else:
+        mode = "float"
+    scripted_model_path = os.path.join(exp_dir, f"scripted_model_{mode}.pth")
     model.to(torch.device("cpu"))
     torch.jit.save(torch.jit.script(model), scripted_model_path)
     print(f"Saved scripted model to {scripted_model_path}")
