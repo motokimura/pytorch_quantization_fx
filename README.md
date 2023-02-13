@@ -108,7 +108,7 @@ To check the model size:
 ls -lh models/exp_4001/scripted_*
 
 ...
--rw-r--r-- 1 root root 3.8M Feb 13 02:49 models/exp_4001/scripted_model_qat.pth
+-rw-r--r-- 1 root root 3.8M Feb 13 02:49 models/exp_4001/scripted_model_qat.pth  # quantized (with quantization aware training)
 ...
 ```
 
