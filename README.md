@@ -1,7 +1,7 @@
 # pytorch_quantization_fx
 
 With this repository, you can try model quantization of MobileNetV2 trained on CIFAR-10 dataset.
-Post training static quantization and quzntization aware training is supported.
+Post training static quantization (PTQ) and quantization aware training (QAT) is supported.
 
 |model               |quantization method                |CIFAR-10 test accuracy [%] |model size [MB]
 |---                 |---                                |---                      |---
