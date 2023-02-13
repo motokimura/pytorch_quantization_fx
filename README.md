@@ -5,8 +5,9 @@ Post training static quantization and quzntization aware training is supported.
 
 |model               |quantization method                |CIFAR-10 test accuracy [%] |model size [MB]
 |---                 |---                                |---                      |---
-|MobileNetV2 (float) |-                                  |96.61                    |14
-|MobileNetV2 (int8)  |post training static quantization  |96.24                    |3.8
+|MobileNetV2 (float) |-                                  |96.43                    |14
+|MobileNetV2 (int8)  |post training static quantization  |95.99                    |3.8
+|MobileNetV2 (int8)  |quantization aware training        |96.48                    |3.8
 
 ## Setup
 
@@ -37,14 +38,17 @@ git config --global --add safe.directory /work
 Pretrained weights are available:
 
 ```
-unzip models_v3.zip
+unzip models_v4.zip
 ```
 
 ```
 models
-└── exp_3000
-    ├── 20230207_03:59:54.json
-    └── best_model.pth  # float model
+├── exp_4000
+│   ├── 20230210_11:20:36.json
+│   └── best_model.pth
+└── exp_4001
+    ├── 20230212_08:38:59.json
+    └── best_model.pth
 ```
 
 ## Post training static quantization
@@ -52,11 +56,11 @@ models
 Train float model first (can be skipped if you use the pretrained weight above):
 
 ```
-EXP_ID=3000
+EXP_ID=4000
 python tools/train.py $EXP_ID
 ```
 
-Trained weight is saved into `models/exp_3000/best_model.pth`.
+Trained weight is saved into `models/exp_4000/best_model.pth`.
 
 To evaluate this model:
 
@@ -73,11 +77,11 @@ python tools/test.py $EXP_ID --ptq
 To compare the model size:
 
 ```
-ls -lh models/exp_3000/scripted_*
+ls -lh models/exp_4000/scripted_*
 
 ...
--rw-r--r-- 1 root root  14M Feb  8 00:01 models/exp_3000/scripted_model_float.pth  # float
--rw-r--r-- 1 root root 3.8M Feb  7 23:58 models/exp_3000/scripted_model_ptq.pth  # quantized (with post training static quantization)
+-rw-r--r-- 1 1002 1002  14M Feb 12 08:04 models/exp_4000/scripted_model_float.pth  # float
+-rw-r--r-- 1 1002 1002 3.8M Feb 13 02:51 models/exp_4000/scripted_model_ptq.pth  # quantized (with post training static quantization)
 ...
 ```
 
@@ -104,14 +108,14 @@ To check the model size:
 ls -lh models/exp_4001/scripted_*
 
 ...
-TODO
+-rw-r--r-- 1 root root 3.8M Feb 13 02:49 models/exp_4001/scripted_model_qat.pth
 ...
 ```
 
 ## TODOs
 
 - [ ] Sensitivity analysis
-- [ ] Quantization aware training
+- [x] Quantization aware training
 
 ## References
 
