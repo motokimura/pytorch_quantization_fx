@@ -1,7 +1,7 @@
 # pytorch_quantization_fx
 
-With this repository, you can try model quantization of MobileNetV2 trained on CIFAR-10 dataset.
-Post training static quantization (PTQ) and quantization aware training (QAT) is supported.
+With this repository, you can try model quantization of MobileNetV2 trained on CIFAR-10 dataset with PyTorch.
+Post training static quantization (PTQ) and quantization aware training (QAT) are supported.
 
 |model               |quantization method                |CIFAR-10 test accuracy [%] |model size [MB]
 |---                 |---                                |---                      |---
@@ -22,7 +22,7 @@ and create a new project named `pytorch_quantization_fx`.
 Get your API key from [W&B](https://wandb.ai) > `Settings` > `API keys` and then:
 
 ```
-echo 'WANDB_API_KEY = "xxxx"' > .env  # replace xxxx with your own W&B API key
+echo 'WANDB_API_KEY = xxxx' > .env  # replace xxxx with your own W&B API key
 ```
 
 When you run `tools/train.py`, the API key will be loaded from `.env` to login W&B.
@@ -45,10 +45,10 @@ unzip models_v4.zip
 models
 ├── exp_4000
 │   ├── 20230210_11:20:36.json
-│   └── best_model.pth
+│   └── best_model.pth  # float model
 └── exp_4001
     ├── 20230212_08:38:59.json
-    └── best_model.pth
+    └── best_model.pth  # float model trained with quantization aware training
 ```
 
 ## Post training static quantization
