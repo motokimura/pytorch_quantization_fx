@@ -98,13 +98,9 @@ class InvertedResidual(nn.Module):
         self.out_channels = oup
         self._is_cn = stride > 1
 
-        # Replace torch.add (of floating mobilenet_v2)
-        # with FloatFunctional to make the model quantizable
-        self.skip_add = nn.quantized.FloatFunctional()
-
     def forward(self, x: Tensor) -> Tensor:
         if self.use_res_connect:
-            return self.skip_add.add(x, self.conv(x))
+            return x + self.conv(x)
         else:
             return self.conv(x)
 
