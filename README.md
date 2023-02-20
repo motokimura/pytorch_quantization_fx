@@ -6,7 +6,7 @@ Post training static quantization (PTQ) and quantization aware training (QAT) ar
 |model               |quantization method                |CIFAR-10 test accuracy [%] |model size [MB]
 |---                 |---                                |---                      |---
 |MobileNetV2 (float) |-                                  |96.43                    |14
-|MobileNetV2 (int8)  |post training static quantization  |95.99                    |3.8
+|MobileNetV2 (int8)  |post training static quantization  |96.22                    |3.8
 |MobileNetV2 (int8)  |quantization aware training        |96.48                    |3.8
 
 ## Setup
