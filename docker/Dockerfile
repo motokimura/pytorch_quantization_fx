@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y git \
 RUN conda clean --all
 
 # install dependencies
-RUN pip install python-dotenv tqdm wandb
+RUN pip install pandas python-dotenv tqdm wandb
 RUN pip install black flake8 isort pre-commit
 
 ENV PYTHONPATH=/work

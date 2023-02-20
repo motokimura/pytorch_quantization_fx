@@ -95,6 +95,17 @@ def prepare_dataloaders(batch_size):
     return train_dataloader, test_dataloader
 
 
+def prepare_calib_dataloader(batch_size):
+    transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+        ]
+    )
+    dataset = CIFAR10(root="~/data", train=True, download=True, transform=transform)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=2)
+
+
 def train(model, optimizer, scheduler, criterion, device, train_dataloader):
     model.train()
     loss_epoch = 0.0

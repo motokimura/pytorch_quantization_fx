@@ -122,6 +122,7 @@ ls -lh models/exp_4001/scripted_*
 - [Practical Quantization in PyTorch](https://pytorch.org/blog/quantization-in-practice/)
 - [(PROTOTYPE) FX GRAPH MODE POST TRAINING STATIC QUANTIZATION](https://pytorch.org/tutorials/prototype/fx_graph_mode_ptq_static.html)
 - [PYTORCH FX NUMERIC SUITE CORE APIS TUTORIAL](https://pytorch.org/tutorials/prototype/fx_numeric_suite_tutorial.html)
+- [github.com/fbsamples/pytorch-quantization-workshop](https://github.com/fbsamples/pytorch-quantization-workshop)
 - [Introduction to Quantization on PyTorch](https://pytorch.org/blog/introduction-to-quantization-on-pytorch/)
 - [(beta) Static Quantization with Eager Mode in PyTorch](https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html)
 - [torchvision/references/classification#quantized](https://github.com/pytorch/vision/tree/main/references/classification#quantized)
