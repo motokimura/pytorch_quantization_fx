@@ -112,9 +112,13 @@ ls -lh models/exp_4001/scripted_*
 ...
 ```
 
+## Others
+
+See [notebooks](notebooks) for quantization debugging methods, e.g., sensitivity analysis etc.
+
 ## TODOs
 
-- [ ] Sensitivity analysis
+- [x] Sensitivity analysis
 - [x] Quantization aware training
 
 ## References
