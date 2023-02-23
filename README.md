@@ -6,7 +6,7 @@ Post training static quantization (PTQ) and quantization aware training (QAT) ar
 |model               |quantization method                |CIFAR-10 test accuracy [%] |model size [MB]
 |---                 |---                                |---                      |---
 |MobileNetV2 (float) |-                                  |96.43                    |14
-|MobileNetV2 (int8)  |post training static quantization  |95.99                    |3.8
+|MobileNetV2 (int8)  |post training static quantization  |96.22                    |3.8
 |MobileNetV2 (int8)  |quantization aware training        |96.48                    |3.8
 
 ## Setup
@@ -112,9 +112,13 @@ ls -lh models/exp_4001/scripted_*
 ...
 ```
 
+## Others
+
+See [notebooks](notebooks) for quantization debugging methods, e.g., sensitivity analysis etc.
+
 ## TODOs
 
-- [ ] Sensitivity analysis
+- [x] Sensitivity analysis
 - [x] Quantization aware training
 
 ## References
@@ -122,6 +126,7 @@ ls -lh models/exp_4001/scripted_*
 - [Practical Quantization in PyTorch](https://pytorch.org/blog/quantization-in-practice/)
 - [(PROTOTYPE) FX GRAPH MODE POST TRAINING STATIC QUANTIZATION](https://pytorch.org/tutorials/prototype/fx_graph_mode_ptq_static.html)
 - [PYTORCH FX NUMERIC SUITE CORE APIS TUTORIAL](https://pytorch.org/tutorials/prototype/fx_numeric_suite_tutorial.html)
+- [github.com/fbsamples/pytorch-quantization-workshop](https://github.com/fbsamples/pytorch-quantization-workshop)
 - [Introduction to Quantization on PyTorch](https://pytorch.org/blog/introduction-to-quantization-on-pytorch/)
 - [(beta) Static Quantization with Eager Mode in PyTorch](https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html)
 - [torchvision/references/classification#quantized](https://github.com/pytorch/vision/tree/main/references/classification#quantized)

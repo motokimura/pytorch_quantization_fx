@@ -6,7 +6,15 @@ from torch.quantization import get_default_qat_qconfig, get_default_qconfig, qua
 from tqdm import tqdm
 
 from lib.mobilenetv2 import mobilenet_v2
-from lib.utils import calibrate, configure_cudnn, prepare_dataloaders, replace_relu, set_seed, test
+from lib.utils import (
+    calibrate,
+    configure_cudnn,
+    prepare_calib_dataloader,
+    prepare_dataloaders,
+    replace_relu,
+    set_seed,
+    test,
+)
 
 
 def parse_arg():
@@ -42,7 +50,8 @@ def main():
     print(f"device: {device}")
 
     print("Preparing dataset...")
-    train_dataloader, test_dataloader = prepare_dataloaders(args.batch_size)
+    _, test_dataloader = prepare_dataloaders(args.batch_size)
+    calib_dataloader = prepare_calib_dataloader(args.batch_size)
 
     print("Preparing model...")
     model = mobilenet_v2()
@@ -67,7 +76,7 @@ def main():
         qconfig = {"": get_default_qconfig(args.backend)}
         model = quantize_fx.prepare_fx(model.eval(), qconfig, example_inputs)
         # calibrate and convert
-        calibrate(model, train_dataloader, args.n_calib_batch)
+        calibrate(model, calib_dataloader, args.n_calib_batch)
         model = quantize_fx.convert_fx(model.eval())
     else:
         model.load_state_dict(state_dict)
